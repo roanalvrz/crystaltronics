@@ -1,17 +1,10 @@
-/*
- * This is an example sketch that shows how to toggle the display
- * on and off at runtime to avoid screen burn-in.
- * 
- * The sketch also demonstrates how to erase a previous value by re-drawing the 
- * older value in the screen background color prior to writing a new value in
- * the same location. This avoids the need to call fillScreen() to erase the
- * entire screen followed by a complete redraw of screen contents.
- * 
- * Originally written by Phill Kelley. BSD license.
- * Adapted for ST77xx by Melissa LeBlanc-Williams
- */
+/******************************************************************************************/
+// CRYSTAL GROWTH MONITORING SYSTEM
+// developed by Roan Alvarez on August 2025
+// This code is for an ESP32-based system that reads ambient temperature and humidity, 
+//  and monitors the liquid level of individual tanks.
+/******************************************************************************************/
 #include <Arduino.h>
-#include <Adafruit_GFX.h>    // Core graphics library
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
