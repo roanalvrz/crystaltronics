@@ -1,1 +1,4 @@
-# crystaltronics
+# Crystaltronics
+Crystaltronics is a low-cost, open-source crystal growth monitoring system developed by Roan Alvarez for the collaborative residency project with Sam Feleo at Bukas Lab under University of the Philippines Open University - Faculty of Information and Communication Studies (UPOU-FICS). Currently, the monitoring system is presented as a freeform circuit composed of an ESP32 microcontroller, ESP32 Camera module, non-contact liquid sensor, AHT20 temperature and humidity sensor, and a 1206 LCD display. The ESP32 Camera takes a photo of the crystal every 10 minutes. The freeform circuit is mounted on the lid of individual tanks to monitor and document the conditions of crystal growth.
+
+NOTE: The project is under active hardware and software development. The version presented in the Parola exhibition at UP Fine Arts is the second prototype.
