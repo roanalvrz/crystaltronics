@@ -65,7 +65,7 @@ uint32_t delayMS;
 #define AUTHOR_PASSWORD "wiqdzfoevbelhoge"
 
 /* Recipient email address */
-#define RECIPIENT_EMAIL "mishycatbuys@gmail.com" //REPLACE WITH YOUR EMAIL ADDRESS samfeleo@yahoo.com
+#define RECIPIENT_EMAIL "samfeleo@yahoo.com" //REPLACE WITH YOUR EMAIL ADDRESS samfeleo@yahoo.com
 
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
