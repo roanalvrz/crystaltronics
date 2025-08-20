@@ -1,20 +1,20 @@
 /******************************************************************************************/
 // CRYSTAL GROWTH MONITORING SYSTEM
 // developed by Roan Alvarez on August 2025
-// This code is for an ESP32-based system that reads ambient temperature and humidity, 
-//  and monitors the liquid level of individual tanks.
+// This code is for an ESP32-based system that reads and displays ambient temperature 
+// and humidity, and monitors the liquid level of individual tanks.
+//
+// source/s: 
+// 
 /******************************************************************************************/
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#include <SPI.h>
 #include <Wire.h>
 
 #define DHTPIN 32     // Digital pin connected to the DHT sensor 
-// Feather HUZZAH ESP8266 note: use pins 3, 4, 5, 12, 13 or 14 --
-// Pin 15 can work but DHT must be disconnected during program upload.
 
 // Uncomment the type of sensor in use:
 #define DHTTYPE    DHT11     // DHT 11
@@ -23,18 +23,14 @@
 
 #define SerialDebugging true
 
-//TwoWire I2CAHT = TwoWire(0);
-LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
-DHT_Unified dht(DHTPIN, DHTTYPE);
-//Adafruit_AHTX0 aht;
+const uint8_t   LevelSensor = 13; //Liquid Level Sensor Pin
+const uint8_t   Button_pin  = 15; //CURRENTLY UNUSED: Button Pin
 
-// connect a push button between ground and...
-const uint8_t   Button_pin  = 15;
-//Liquid Level Sensor Pin
-const uint8_t   LevelSensor = 13;
 // the interrupt service routine affects this
 volatile bool   isButtonPressed         = false;
 
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+DHT_Unified dht(DHTPIN, DHTTYPE);
 int liquidLevel = 0;
 
 uint32_t delayMS;
@@ -51,13 +47,13 @@ void setup() {
     Serial.begin(9600); while (!Serial); Serial.println();
     #endif
 
-    //I2CAHT.begin(I2C_SDA, I2C_SCL, 400000);bool status;
     lcd.init(); // initialize the lcd 
     lcd.backlight();
     lcd.clear(); // clear the screen
 
     dht.begin();
     Serial.println(F("Init DHT11 Sensor"));
+
     // Get temperature sensor details.
     sensor_t sensor;
     dht.temperature().getSensor(&sensor);
@@ -108,7 +104,7 @@ void loop() {
     Serial.println(F("Error reading humidity!"));
     lcd.setCursor(0,0);
     lcd.print("ERROR READING HUM!");
-    delay(2000); // wait a second before next reading
+    delay(2000); // wait before displaying next text
   }
   else {
     Serial.print(F("Humidity: "));
@@ -116,7 +112,7 @@ void loop() {
     Serial.println(F("%"));
     lcd.setCursor(0,0);
     lcd.print("HUMIDITY : ");lcd.print(event.relative_humidity);lcd.println(" %");
-    delay(2000); // wait a second before next reading
+    delay(2000); // wait before displaying next text
   }
 
   //if water level is 0 = OK, if water level is 1 = LOW
@@ -125,12 +121,12 @@ void loop() {
       Serial.print("Liquid Level : OK!");
       lcd.setCursor(0,0);
       lcd.print("LIQUID LVL : OK!");
-      delay(2000); // wait a second before next reading
+      delay(2000); // wait before displaying next text
     } 
     else {
       Serial.print("Liquid Level: LOW. ");Serial.println("PLEASE CHECK TANK!");
       lcd.setCursor(0,0);
       lcd.print("LIQUID LVL : LOW");
-      delay(2000); // wait a second before next reading
+      delay(2000); // wait before displaying next text
     }
 }
