@@ -1,4 +1,5 @@
-adafruit/DHT sensor library@^1.4.6
 adafruit/Adafruit AHTX0@^2.0.5
+mobizt/ESP Mail Client@^3.4.24
 marcoschwartz/LiquidCrystal_I2C@^1.1.4
+adafruit/DHT sensor library@^1.4.6
 adafruit/Adafruit SSD1306@^2.5.15
