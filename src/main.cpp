@@ -14,7 +14,7 @@
 #include <DHT_U.h>
 #include <Wire.h>
 
-#define DHTPIN 32     // Digital pin connected to the DHT sensor 
+#define DHTPIN 32     // Digital pin connected to the DHT sensor ***SET AS PIN 2
 
 // Uncomment the type of sensor in use:
 #define DHTTYPE    DHT11     // DHT 11
