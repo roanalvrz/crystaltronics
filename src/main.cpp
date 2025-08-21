@@ -8,9 +8,10 @@
 // ESP Mail Client library.
 //
 // Future developments may include:
-//  - Implementation of ESP-NOW communication with the ESP32-CAM:
-//        - Use of a button to reset EEPROM in ESP32CAM;
-//        - Display current photo number on the LCD connected to the ESP32.
+//  - Implementation of ESP-NOW communication with the ESP32-CAM in order to:
+//        - Use of a button to reset EEPROM in ESP32-CAM;
+//        - Display current photo number on the LCD connected to the ESP32; and
+//        - Include last photo taken by the ESP32-CAM in the email notification.
 //  - Set limits for email notification to avoid spamming the recipient.
 //
 // SOURCE/S: 
@@ -30,13 +31,15 @@
 
 //REPLACE WITH YOUR WIFI CREDENTIALS
 #define WIFI_SSID "Deirdog"
-#define WIFI_PASSWORD "*************"
+#define WIFI_PASSWORD "*********"
+
+#define TANK_NAME "TANK 1" //REPLACE WITH TANK NUMBER
 
 #define DHTPIN 4     // Digital pin connected to the DHT sensor ***OR SET AS PIN 32
 
 // Uncomment the type of sensor in use:
-//#define DHTTYPE    DHT11     // DHT 11 -- Used during the development of this code
-#define DHTTYPE    DHT22     // DHT 22 (AM2302) -- Used in the final prototype
+#define DHTTYPE    DHT11     // DHT 11 -- Used during the development of this code
+//#define DHTTYPE    DHT22     // DHT 22 (AM2302) -- Used in the final prototype
 //#define DHTTYPE    DHT21     // DHT 21 (AM2301)
 
 #define SerialDebugging true
@@ -65,10 +68,10 @@ uint32_t delayMS;
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "proto01crystaltronics@gmail.com"
-#define AUTHOR_PASSWORD "***************"
+#define AUTHOR_PASSWORD "**********"
 
 /* Recipient email address */
-#define RECIPIENT_EMAIL "****************" //REPLACE WITH YOUR EMAIL ADDRESS
+#define RECIPIENT_EMAIL "**********" //REPLACE WITH YOUR EMAIL ADDRESS 
 
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
@@ -117,8 +120,13 @@ void setup() {
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
     Serial.println();
+    lcd.setCursor(0,0);
+    lcd.print("=====");lcd.print(TANK_NAME);lcd.print("=====");
     lcd.setCursor(0,1);
-    lcd.print("Waiting for WIFI!");
+    lcd.print("Waiting for WIFI.");
+    delay(2000); // wait for 2 seconds
+    lcd.setCursor(0,1);
+    lcd.print("IP: ");lcd.print(WiFi.localIP());
 
     if (!LittleFS.begin()) { //littleFS initialize then create file if it does not exist
     Serial.println("LittleFS Mount Failed");
@@ -208,8 +216,14 @@ void loop() {
       if(event.temperature < 20 || event.temperature > 40) {
         Serial.println("Temperature is not within threshold! Sending email...");
         lcd.setCursor(0,1);
-        lcd.print("TEMP IS NOT OK!");
+        lcd.print(" TEMP IS NOT OK ");
+        delay(2000); // wait before displaying next text
+        lcd.setCursor(0,1);
+        lcd.print("Sending alert...");
+
         sendEmailTemp();
+        lcd.setCursor(0,1);
+        lcd.print("EMAIL ALERT SENT");
     }
   }
   // Get humidity event and print its value.
@@ -232,18 +246,19 @@ void loop() {
   //if water level is 0 = OK, if water level is 1 = LOW
   liquidLevel = digitalRead(LevelSensor);
     if  (liquidLevel == 0) {
+      lcd.setCursor(0,1);
+      lcd.print("=====");lcd.print(TANK_NAME);lcd.print("=====");
+      
       Serial.print("Liquid Level : OK!");Serial.println();
       lcd.setCursor(0,0);
       lcd.print("LIQUID LVL: OK !");
       delay(2000); // wait before displaying next text
-      lcd.setCursor(0,1);
-      lcd.print("IP: ");lcd.print(WiFi.localIP());
     } 
     else {
       Serial.print("Liquid Level: LOW. ");Serial.println("PLEASE CHECK TANK!");
       lcd.setCursor(0,0);
       lcd.print("LIQUID LVL : LOW");
-      lcd.setCursor(20,2);
+      lcd.setCursor(0,1);
       lcd.print("Sending alert...");
       delay(2000); // wait before displaying next text
 
@@ -254,11 +269,10 @@ void loop() {
 }
 
 void sendEmail() {
-  String lastTemp;
+  String lastTemp, TankName;
 
   sensors_event_t event;
   dht.temperature().getEvent(&event);
-
   lastTemp = String(event.temperature);
 
   /* Declare the message class */
@@ -267,18 +281,11 @@ void sendEmail() {
   /* Set the message headers */
   message.sender.name = F("ESP");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = F("PLEASE CHECK TANK 1! - Sent from ESP board");
+  message.subject = F("RE: LIQUID LEVEL. PLEASE CHECK TANK! - Sent from ESP board");
   message.addRecipient(F("Sam"), RECIPIENT_EMAIL);
-  
-  /*Send HTML message*/
-  /*String htmlMsg = "<div style=\"color:#2f4468;\"><h1>PLEASE CHECK TANK!</h1><p>- Sent from ESP board</p></div>";
-  message.html.content = htmlMsg.c_str();
-  message.html.content = htmlMsg.c_str();
-  message.text.charSet = "us-ascii";
-  message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;*/
 
   //Send raw text message
-  String textMsg = "Liquid level is LOW! Current temperature is: " + (lastTemp) + "°C. Please check the tank.";
+  String textMsg = "Liquid level is LOW! Current temperature is: " + (lastTemp) + "°C. Please check " + TANK_NAME + ".";
   message.text.content = textMsg.c_str();
   message.text.charSet = "us-ascii";
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
@@ -305,7 +312,6 @@ void sendEmailTemp() {
 
   sensors_event_t event;
   dht.temperature().getEvent(&event);
-
   lastTemp = String(event.temperature);
 
   /* Declare the message class */
@@ -314,18 +320,11 @@ void sendEmailTemp() {
   /* Set the message headers */
   message.sender.name = F("ESP");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = F("PLEASE CHECK TANK 1! - Sent from ESP board");
+  message.subject = F("RE: TEMPERATURE. PLEASE CHECK TANK! - Sent from ESP board");
   message.addRecipient(F("Sam"), RECIPIENT_EMAIL);
-  
-  /*Send HTML message*/
-  /*String htmlMsg = "<div style=\"color:#2f4468;\"><h1>PLEASE CHECK TANK!</h1><p>- Sent from ESP board</p></div>";
-  message.html.content = htmlMsg.c_str();
-  message.html.content = htmlMsg.c_str();
-  message.text.charSet = "us-ascii";
-  message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;*/
 
   //Send raw text message
-  String textMsg = "Current temperature is not within threshold! Current temperature is: " + (lastTemp) + "°C. Please check the tank.";
+  String textMsg = "Current temperature is not within threshold! Temperature is currently " + (lastTemp) + "°C. Please check " + TANK_NAME + ".";
   message.text.content = textMsg.c_str();
   message.text.charSet = "us-ascii";
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
