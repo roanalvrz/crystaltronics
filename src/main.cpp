@@ -3,14 +3,15 @@
 // developed by Roan Alvarez on August 2025
 // This code is for an ESP32-based system that reads and displays ambient temperature 
 // and humidity, and monitors the liquid level of individual tanks.
-// Once the liquid level is below threshold, email notifications will be sent to the recepient
-// using the ESP Mail Client library.
-
+// Once the liquid level and/or temperature is below threshold,
+// email notifications will be sent to the recepient using the 
+// ESP Mail Client library.
+//
 // Future developments may include:
-//  - ESP-NOW communication with an ESP32-CAM to display photos on the LCD;
+//  - Implementation of ESP-NOW communication with the ESP32-CAM:
+//        - Use of a button to reset EEPROM in ESP32CAM;
+//        - Display current photo number on the LCD connected to the ESP32.
 //  - Set limits for email notification to avoid spamming the recipient.
-//  - Use of a button to reset EEPROM in ESP32CAM
-//  - Add threshold for temperature <20°C and >40°C to send email notifications.
 //
 // SOURCE/S: 
 // Based on the ESP Mail Client Library Created by K. Suwatchai (Mobizt)
@@ -29,13 +30,13 @@
 
 //REPLACE WITH YOUR WIFI CREDENTIALS
 #define WIFI_SSID "Deirdog"
-#define WIFI_PASSWORD "<password>"
+#define WIFI_PASSWORD "*************"
 
 #define DHTPIN 4     // Digital pin connected to the DHT sensor ***OR SET AS PIN 32
 
 // Uncomment the type of sensor in use:
-#define DHTTYPE    DHT11     // DHT 11
-//#define DHTTYPE    DHT22     // DHT 22 (AM2302)
+//#define DHTTYPE    DHT11     // DHT 11 -- Used during the development of this code
+#define DHTTYPE    DHT22     // DHT 22 (AM2302) -- Used in the final prototype
 //#define DHTTYPE    DHT21     // DHT 21 (AM2301)
 
 #define SerialDebugging true
@@ -64,10 +65,10 @@ uint32_t delayMS;
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "proto01crystaltronics@gmail.com"
-#define AUTHOR_PASSWORD "wiqdzfoevbelhoge"
+#define AUTHOR_PASSWORD "***************"
 
 /* Recipient email address */
-#define RECIPIENT_EMAIL "samfeleo@yahoo.com" //REPLACE WITH YOUR EMAIL ADDRESS samfeleo@yahoo.com
+#define RECIPIENT_EMAIL "****************" //REPLACE WITH YOUR EMAIL ADDRESS
 
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
@@ -78,6 +79,7 @@ ESP_Mail_Session config;
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 void sendEmail();
+void sendEmailTemp();
 
 // interrupt service routine
 void senseButtonPressed() {
@@ -201,6 +203,14 @@ void loop() {
     lcd.setCursor(0,0);
     lcd.print("TEMP: ");lcd.print(event.temperature);lcd.println("deg C");
     delay(2000); // wait a second before next reading
+
+    // Check if temperature is within threshold (20°C to 40°C); if not, send email notification.
+      if(event.temperature < 20 || event.temperature > 40) {
+        Serial.println("Temperature is not within threshold! Sending email...");
+        lcd.setCursor(0,1);
+        lcd.print("TEMP IS NOT OK!");
+        sendEmailTemp();
+    }
   }
   // Get humidity event and print its value.
   dht.humidity().getEvent(&event);
@@ -269,6 +279,53 @@ void sendEmail() {
 
   //Send raw text message
   String textMsg = "Liquid level is LOW! Current temperature is: " + (lastTemp) + "°C. Please check the tank.";
+  message.text.content = textMsg.c_str();
+  message.text.charSet = "us-ascii";
+  message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+  
+  message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
+  message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+
+  /* Connect to the server */
+  if (!smtp.connect(&config)){
+   // ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    return;
+  }
+
+  /* Start sending Email and close the session */
+  if (!MailClient.sendMail(&smtp, &message)) //"Status Code: %d" smtp.statusCode(),
+    //ESP_MAIL_PRINTF("Error,  Error Code: %d, Reason: %s",  smtp.errorCode(), smtp.errorReason().c_str());
+    Serial.println("Error sending Email");
+    lcd.setCursor(20,2);
+    lcd.print("Error sending e-mail!");
+}
+
+void sendEmailTemp() {
+  String lastTemp;
+
+  sensors_event_t event;
+  dht.temperature().getEvent(&event);
+
+  lastTemp = String(event.temperature);
+
+  /* Declare the message class */
+  SMTP_Message message;
+
+  /* Set the message headers */
+  message.sender.name = F("ESP");
+  message.sender.email = AUTHOR_EMAIL;
+  message.subject = F("PLEASE CHECK TANK 1! - Sent from ESP board");
+  message.addRecipient(F("Sam"), RECIPIENT_EMAIL);
+  
+  /*Send HTML message*/
+  /*String htmlMsg = "<div style=\"color:#2f4468;\"><h1>PLEASE CHECK TANK!</h1><p>- Sent from ESP board</p></div>";
+  message.html.content = htmlMsg.c_str();
+  message.html.content = htmlMsg.c_str();
+  message.text.charSet = "us-ascii";
+  message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;*/
+
+  //Send raw text message
+  String textMsg = "Current temperature is not within threshold! Current temperature is: " + (lastTemp) + "°C. Please check the tank.";
   message.text.content = textMsg.c_str();
   message.text.charSet = "us-ascii";
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
