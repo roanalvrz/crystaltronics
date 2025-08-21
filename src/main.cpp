@@ -9,6 +9,8 @@
 // Future developments may include:
 //  - ESP-NOW communication with an ESP32-CAM to display photos on the LCD;
 //  - Set limits for email notification to avoid spamming the recipient.
+//  - Use of a button to reset EEPROM in ESP32CAM
+//  - Add threshold for temperature <20°C and >40°C to send email notifications.
 //
 // SOURCE/S: 
 // Based on the ESP Mail Client Library Created by K. Suwatchai (Mobizt)
@@ -27,9 +29,9 @@
 
 //REPLACE WITH YOUR WIFI CREDENTIALS
 #define WIFI_SSID "Deirdog"
-#define WIFI_PASSWORD "m!shyc@tDDk3t"
+#define WIFI_PASSWORD "<password>"
 
-#define DHTPIN 32     // Digital pin connected to the DHT sensor ***SET AS PIN 2
+#define DHTPIN 4     // Digital pin connected to the DHT sensor ***OR SET AS PIN 32
 
 // Uncomment the type of sensor in use:
 #define DHTTYPE    DHT11     // DHT 11
