@@ -1,4 +1,4 @@
-/******************************************************************************************/
+//=====================================================================================================//
 // CRYSTAL GROWTH MONITORING SYSTEM
 // developed by Roan Alvarez on August 2025
 // This code is for an ESP32-based system that reads and displays ambient temperature 
@@ -7,6 +7,14 @@
 // email notifications will be sent to the recepient using the 
 // ESP Mail Client library.
 //
+// THIS CODE IS ONLY FOR THE NODEMCU-32S ESP32 MICROCONTROLLER;
+// CODE FOR THE ESP32CAM (Timelapse-ESP32CAM.ino) IS UPLOADED SEPARATELY using Arduino IDE 2.3.6.
+//
+//*****************************************************************************************************//
+//*  INSTRUCTIONS BEFORE UPLOADING THE CODE:                                                          *//
+//*  Format LittleFS in the ESP32 board using the code "LittleFS-ESP32-Formatting" using PlatformIO.  *//
+//*****************************************************************************************************//
+//
 // Future developments may include:
 //  - Implementation of ESP-NOW communication with the ESP32-CAM in order to:
 //        - Use of a button to reset EEPROM in ESP32-CAM;
@@ -14,9 +22,10 @@
 //        - Include last photo taken by the ESP32-CAM in the email notification.
 //  - Set limits for email notification to avoid spamming the recipient.
 //
-// SOURCE/S: 
-// Based on the ESP Mail Client Library Created by K. Suwatchai (Mobizt)
-/******************************************************************************************/
+// Notes: 
+// The code is based on the ESP Mail Client library example created by K. Suwatchai (Mobizt),
+// Adafruit library examples for DHT Sensors, and LiquidCrystal_I2C library by Frank de Brabander.
+//=====================================================================================================//
 
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
@@ -31,24 +40,24 @@
 
 //REPLACE WITH YOUR WIFI CREDENTIALS
 #define WIFI_SSID "Deirdog"
-#define WIFI_PASSWORD "*********"
+#define WIFI_PASSWORD "************"
 
 #define TANK_NAME "TANK 1" //REPLACE WITH TANK NUMBER
 
 #define DHTPIN 4     // Digital pin connected to the DHT sensor ***OR SET AS PIN 32
 
 // Uncomment the type of sensor in use:
-#define DHTTYPE    DHT11     // DHT 11 -- Used during the development of this code
-//#define DHTTYPE    DHT22     // DHT 22 (AM2302) -- Used in the final prototype
+//#define DHTTYPE    DHT11     // DHT 11 -- Used during the development of this code
+#define DHTTYPE    DHT22     // DHT 22 (AM2302) -- Used in the final work
 //#define DHTTYPE    DHT21     // DHT 21 (AM2301)
 
 #define SerialDebugging true
 
 const uint8_t   LevelSensor = 13; //Liquid Level Sensor Pin
-const uint8_t   Button_pin  = 15; //CURRENTLY UNUSED: Button Pin
 
-// the interrupt service routine affects this
-volatile bool   isButtonPressed         = false;
+/***** UNUSED BUTTON FUNCTION (kept for future implementation *****/
+const uint8_t   Button_pin  = 15; //CURRENTLY UNUSED: Button Pin
+volatile bool  isButtonPressed = false; // the interrupt service routine affects this
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 DHT_Unified dht(DHTPIN, DHTTYPE);
@@ -59,7 +68,7 @@ uint32_t delayMS;
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "smtp.gmail.com"
 
-/** The smtp port e.g.
+/* The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
@@ -68,10 +77,10 @@ uint32_t delayMS;
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "proto01crystaltronics@gmail.com"
-#define AUTHOR_PASSWORD "**********"
+#define AUTHOR_PASSWORD "*************"
 
 /* Recipient email address */
-#define RECIPIENT_EMAIL "**********" //REPLACE WITH YOUR EMAIL ADDRESS 
+#define RECIPIENT_EMAIL "*************" //REPLACE WITH YOUR EMAIL ADDRESS
 
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
@@ -84,8 +93,8 @@ void smtpCallback(SMTP_Status status);
 void sendEmail();
 void sendEmailTemp();
 
-// interrupt service routine
-void senseButtonPressed() {
+/****** UNUSED BUTTON FUNCTION (kept for future implementation ******/
+void senseButtonPressed() {     // interrupt service routine
     if (!isButtonPressed) {
         isButtonPressed = true;
     }
@@ -173,35 +182,34 @@ void setup() {
     dht.temperature().getSensor(&sensor);
     dht.humidity().getSensor(&sensor);
 
-    // button press pulls pin LOW so configure HIGH
-    pinMode(Button_pin,INPUT_PULLUP);
     pinMode(LevelSensor, INPUT);
-
-    // use an interrupt to sense when the button is pressed
-    attachInterrupt(digitalPinToInterrupt(Button_pin), senseButtonPressed, FALLING);
 
     // Set delay between sensor readings based on sensor details.
     delayMS = sensor.min_delay / 1000;
 
-    // ignore any power-on-reboot garbage
-    isButtonPressed = false;
+    /****** UNUSED BUTTON FUNCTION (kept for future implementation ******/
+    pinMode(Button_pin,INPUT_PULLUP); // button press pulls pin LOW so configure HIGH
+    attachInterrupt(digitalPinToInterrupt(Button_pin), senseButtonPressed, FALLING); // use an interrupt to sense when the button is pressed
+    
+    isButtonPressed = false;  // ignore any power-on-reboot garbage
+    /*******************************************************************/
 }
 
 void loop() {
-  // Delay between measurements.
+  /* Delay between measurements. */
   delay(delayMS);
 
   /*****IF USING ESPNOW : Display the data from ESP32CAM on the LCD******/
   //lcd.setCursor(0,1);
   //lcd.print("Photo No. : ");lcd.println("");
 
-  // Get temperature event and print its value.
+  /* Get temperature event and print its value. */
   sensors_event_t event;
   dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
     Serial.println(F("Error reading temperature!"));
     lcd.setCursor(0,0);
-    lcd.print("ERROR READING TEMP!");
+    lcd.print(" ERROR READ TEMP ");
     delay(2000); // wait a second before next reading
   }
   else {
@@ -212,7 +220,7 @@ void loop() {
     lcd.print("TEMP: ");lcd.print(event.temperature);lcd.println("deg C");
     delay(2000); // wait a second before next reading
 
-    // Check if temperature is within threshold (20°C to 40°C); if not, send email notification.
+    /* Check if temperature is within threshold (20°C to 40°C); if not, send email notification. */
       if(event.temperature < 20 || event.temperature > 40) {
         Serial.println("Temperature is not within threshold! Sending email...");
         lcd.setCursor(0,1);
@@ -226,12 +234,12 @@ void loop() {
         lcd.print("EMAIL ALERT SENT");
     }
   }
-  // Get humidity event and print its value.
+  /* Get humidity event and print its value. */
   dht.humidity().getEvent(&event);
   if (isnan(event.relative_humidity)) {
     Serial.println(F("Error reading humidity!"));
     lcd.setCursor(0,0);
-    lcd.print("ERROR READING HUM!");
+    lcd.print(" ERROR READ HUM ");
     delay(2000); // wait before displaying next text
   }
   else {
@@ -243,7 +251,7 @@ void loop() {
     delay(2000); // wait before displaying next text
   }
 
-  //if water level is 0 = OK, if water level is 1 = LOW
+  /* if water level is 0 = OK, if water level is 1 = LOW */
   liquidLevel = digitalRead(LevelSensor);
     if  (liquidLevel == 0) {
       lcd.setCursor(0,1);
